@@ -1,7 +1,7 @@
 {
   "name": "language-spinner",
-  "version": "0.4.0",
-  "description": "Learn a language while Claude thinks: the spinner shows a phrase in your target language with its translation, from built-in, file or script packs",
+  "version": "0.5.0",
+  "description": "Learn a language while Claude thinks: the spinner shows a phrase, then its translation five seconds later, and a new verb every twenty. Ships English, Spanish, French, German and Japanese pairs; add your own from a file or a script",
   "author": {
     "name": "lucaslobasso",
     "url": "https://github.com/lucaslobasso"
@@ -21,15 +21,15 @@
     "pack": {
       "type": "string",
       "title": "Pack",
-      "description": "Where the phrases come from: the built-in japanese, or the name of a pack you added with /spinner add (list them with /spinner packs). Change it with /spinner pack NAME",
-      "default": "japanese"
+      "description": "Where the phrases come from: a built-in pair (en-es, en-fr, en-de, en-jp, fr-de, fr-es, fr-jp, de-es, de-jp) or japanese, or the name of a pack you added with /spinner add (list them with /spinner packs). Change it with /spinner pack NAME",
+      "default": "en-es"
     },
     "display": {
       "type": "string",
       "title": "Display",
-      "description": "same-line: phrase and translation together. alternate: phrase first, then its translation",
-      "options": ["same-line", "alternate"],
-      "default": "same-line"
+      "description": "alternate: the phrase first, then its translation. same-line: both together",
+      "options": ["alternate", "same-line"],
+      "default": "alternate"
     },
     "intervalSeconds": {
       "type": "number",

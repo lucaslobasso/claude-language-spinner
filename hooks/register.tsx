@@ -3,14 +3,15 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, View } from '../types'
 import { japanese } from './packs/japanese'
+import { PAIRS } from './packs/pairs'
 
 const START: View = { index: 0, phase: 0 }
 // The shape tag declines a value an earlier version stored (it held base and offset).
 const view = atom({ plugin: 'language-spinner', key: 'view' } as const, START, { shape: 'view-2' })
 
 /** The packs that ship with the plugin: a name and a function returning the list. */
-const BUILTINS: Record<string, () => Entry[]> = { japanese }
-const DEFAULT_PACK = 'japanese'
+const BUILTINS: Record<string, () => Entry[]> = { ...PAIRS, japanese }
+const DEFAULT_PACK = 'en-es'
 const NAME = /^[a-z0-9][a-z0-9_-]{0,31}$/i
 const PACK_TIMEOUT_MS = 15000
 
@@ -326,7 +327,8 @@ async function refreshPack($: EngineInterface, name: string, apply: (list: Entry
 
 export const register: Register = (on, options) => {
   const isEnabled = options.enabled !== false
-  const isAlternate = options.display === 'alternate'
+  // One language at a time unless asked for both on one line.
+  const isAlternate = options.display !== 'same-line'
   const interval = Math.max(1, seconds(options.intervalSeconds, 5))
   const askedRotate = seconds(options.rotateSeconds, 20)
   const rotate = effectiveRotate(askedRotate, interval, isAlternate)
@@ -537,7 +539,7 @@ export const register: Register = (on, options) => {
           $.ui.toast(`language-spinner: pack "${packName}" failed: ${failure}`)
 
           if (entries.length === 0) {
-            await showEntry($, loadAndDraw(japanese())).catch(() => undefined)
+            await showEntry($, loadAndDraw(PAIRS[DEFAULT_PACK]?.() ?? japanese())).catch(() => undefined)
           }
         }
       })()
