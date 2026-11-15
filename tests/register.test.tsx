@@ -12,7 +12,7 @@ test('ichidan verbs drop る', () => {
   expect(texts('たべる', 'ichidan', 'eat')).toEqual([
     "たべている| I'm eating",
     'たべていました| I was eating',
-    "たべよう| let's eat",
+    "たべよう| Let's eat",
     'たべたい| I want to eat',
     'たべられる| I can eat',
   ])
@@ -308,7 +308,7 @@ test(
     await clock.advance(1000)
     const gloss = (await ui.find({ type: 'Text' }))?.text
     expect(gloss).not.toBe(phrase)
-    expect(gloss).toMatch(/^(I'm|I was|let's|I want|I can)/)
+    expect(gloss).toMatch(/^(I'm|I was|Let's|I want|I can)/)
 
     await clock.advance(5000)
     expect((await ui.find({ type: 'Text' }))?.text).toBe(phrase)
@@ -470,16 +470,20 @@ test('phrases are in the first person and continuous, in each language', () => {
   const first = (lang: any) => phrases(lang)[0]?.phrase
 
   expect(first('en')).toBe("I'm eating")
-  expect(first('es')).toBe('estoy comiendo')
-  expect(first('fr')).toBe('je suis en train de manger')
-  expect(first('de')).toBe('ich esse gerade')
+  expect(first('es')).toBe('Estoy comiendo')
+  expect(first('fr')).toBe('Je suis en train de manger')
+  expect(first('de')).toBe('Ich esse gerade')
   expect(first('jp')).toBe('たべています')
   // "d'" before a vowel, and the reflexive follows the speaker.
-  expect(phrases('fr').find(r => r.verb === 'write')?.phrase).toBe("je suis en train d'écrire")
-  expect(phrases('fr').find(r => r.verb === 'rest')?.phrase).toBe('je suis en train de me reposer')
+  expect(phrases('fr').find(r => r.verb === 'write')?.phrase).toBe("Je suis en train d'écrire")
+  expect(phrases('fr').find(r => r.verb === 'rest')?.phrase).toBe('Je suis en train de me reposer')
   expect(phrases('en').every(r => r.phrase.startsWith("I'm "))).toBe(true)
-  expect(phrases('es').every(r => r.phrase.startsWith('estoy '))).toBe(true)
+  expect(phrases('es').every(r => r.phrase.startsWith('Estoy '))).toBe(true)
   expect(phrases('jp').every(r => r.phrase.endsWith('います'))).toBe(true)
+  // Every Latin-script phrase starts with a capital letter.
+  for (const lang of ['en', 'es', 'fr', 'de'] as const) {
+    expect(phrases(lang).every(r => /^\p{Lu}/u.test(r.phrase)), lang).toBe(true)
+  }
 })
 
 test('out of the box: English then Spanish, one language at a time, a new verb every 20 seconds', async ($, on) => {

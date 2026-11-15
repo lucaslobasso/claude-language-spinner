@@ -122,7 +122,7 @@ test(
     } as const)
 
     await clock.advance(5000)
-    expect((await ui.find({ type: 'Text' }))?.text).toMatch(/^(I'm|I was|I've|I had|let's|I want|I can)/)
+    expect((await ui.find({ type: 'Text' }))?.text).toMatch(/^(I'm|I was|I've|I had|Let's|I want|I can)/)
     await ui.unmount()
   },
 )
