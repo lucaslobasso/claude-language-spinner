@@ -105,7 +105,7 @@ test('in alternate display a phrase stays at least two intervals', () => {
 
 test(
   'alternate with a short rotate still shows the translation',
-  { options: { display: 'alternate', rotateSeconds: 5, intervalSeconds: 5 } },
+  { options: { pack: 'japanese', display: 'alternate', rotateSeconds: 5, intervalSeconds: 5 } },
   async ($, on) => {
     const clock = mock.clock(on)
     on('prompt.submit', (_, e) => e)
@@ -172,12 +172,14 @@ test('only verbs listed as irregular conjugate as する verbs', () => {
 })
 
 test('change-of-state verbs say what their ている form really means', () => {
+  // No verb in the shipped pack needs this; a verb added to it can.
   const gloss = (text: string) => japanese().find(it => it.text === text)?.gloss
+  const state: [string, string] = ["I've gone (I'm there)", 'I had gone']
 
-  expect(gloss('いっている')).toBe("I've gone (I'm there)")
-  expect(gloss('きている')).toBe("I'm here (I've come)")
-  expect(gloss('かえっている')).toBe("I'm back home")
-  expect(gloss('おきている')).toBe("I'm awake")
+  expect(conjugate('いく', 'godan', 'go', state).slice(0, 2)).toMatchObject([
+    { text: 'いっている', gloss: "I've gone (I'm there)" },
+    { text: 'いっていました', gloss: 'I had gone' },
+  ])
   expect(gloss('たべている')).toBe("I'm eating")
   expect(conjugate('いく', 'godan', 'go')[0]?.gloss).toBe("I'm going") // no state given: the plain rule
 })

@@ -1,6 +1,8 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 import { conjugate, japanese } from '../hooks/packs/japanese'
+import { PAIRS } from '../hooks/packs/pairs'
+import { phrases } from '../hooks/packs/verbs'
 import { createDeck, effectiveRotate, explainExit, parseCommand, parseEntries, tokenize } from '../hooks/register'
 
 const texts = (reading: string, group: 'godan' | 'ichidan' | 'irregular', gloss: string) =>
@@ -64,8 +66,8 @@ test('states skip the progressive forms', () => {
   expect(conjugate('ある', 'godan', 'exist').map(it => it.text)).toEqual(['あろう', 'ありたい', 'あれる'])
 })
 
-test('the Japanese pack has 5 forms of each of its 21 verbs', () => {
-  expect(japanese()).toHaveLength(105)
+test('the Japanese pack has 5 forms of each of its 50 verbs', () => {
+  expect(japanese()).toHaveLength(250)
 })
 
 test("a pack's output keeps valid rows and refuses a non-list", () => {
@@ -174,7 +176,7 @@ const SPINNER = {
   props: { word: 'Sauteing', message: null, suffix: '…', mode: 'thinking' },
 } as const
 
-test('the spinner shows the phrase and its translation on one line', async ($, on) => {
+test('the spinner shows the phrase and its translation on one line', { options: { pack: 'japanese', display: 'same-line' } }, async ($, on) => {
   // The engine draws whatever props reach it.
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
@@ -188,7 +190,7 @@ test('the spinner shows the phrase and its translation on one line', async ($, o
   await ui.unmount()
 })
 
-test('the spinner shows only the phrase first when alternating', { options: { display: 'alternate' } }, async ($, on) => {
+test('the spinner shows only the phrase first when alternating', { options: { pack: 'japanese', display: 'alternate' } }, async ($, on) => {
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
 
@@ -222,7 +224,7 @@ const draw = (on: any) =>
     return <Text>{`${e.props.word}${e.props.suffix}`}</Text>
   })
 
-test('the phrase switches after 20 seconds of one turn', async ($, on) => {
+test('the phrase switches after 20 seconds of one turn', { options: { pack: 'japanese', display: 'same-line' } }, async ($, on) => {
   const clock = mock.clock(on)
   on('prompt.submit', (_, e) => e)
   draw(on)
@@ -241,7 +243,7 @@ test('the phrase switches after 20 seconds of one turn', async ($, on) => {
   await ui.unmount()
 })
 
-test('every switch lands on a different verb, not another form of the same one', async ($, on) => {
+test('every switch lands on a different verb, not another form of the same one', { options: { pack: 'japanese', display: 'same-line' } }, async ($, on) => {
   const verbOf = new Map(japanese().map(entry => [entry.text, entry.verb]))
   const clock = mock.clock(on)
   on('prompt.submit', (_, e) => e)
@@ -267,7 +269,7 @@ test('every switch lands on a different verb, not another form of the same one',
   await ui.unmount()
 })
 
-test('a new turn opens on a different verb than the last one shown', async ($, on) => {
+test('a new turn opens on a different verb than the last one shown', { options: { pack: 'japanese', display: 'same-line' } }, async ($, on) => {
   const verbOf = new Map(japanese().map(entry => [entry.text, entry.verb]))
   on('prompt.submit', (_, e) => e)
   draw(on)
@@ -290,7 +292,7 @@ test('a new turn opens on a different verb than the last one shown', async ($, o
 
 test(
   'alternating flips to the translation after the interval',
-  { options: { display: 'alternate', rotateSeconds: 0 } },
+  { options: { pack: 'japanese', display: 'alternate', rotateSeconds: 0 } },
   async ($, on) => {
     const clock = mock.clock(on)
     on('prompt.submit', (_, e) => e)
@@ -329,7 +331,7 @@ const start = ($: any, on: any) => {
   return $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
 }
 
-test('a command pack runs when the session starts and its phrases are drawn', { options: { pack: 'study' } }, async ($, on) => {
+test('a command pack runs when the session starts and its phrases are drawn', { options: { pack: 'study', display: 'same-line' } }, async ($, on) => {
   const clock = mock.clock(on)
   mock.store(on, { packs: PACKS })
   const ran: unknown[] = []
@@ -351,7 +353,7 @@ test('a command pack runs when the session starts and its phrases are drawn', { 
   await ui.unmount()
 })
 
-test('a failing pack keeps its last good list and says why', { options: { pack: 'study' } }, async ($, on) => {
+test('a failing pack keeps its last good list and says why', { options: { pack: 'study', display: 'same-line' } }, async ($, on) => {
   const clock = mock.clock(on)
   mock.store(on, { packs: PACKS, 'cache:study': ROWS })
   const toasts: string[] = []
@@ -376,7 +378,7 @@ test('a failing pack keeps its last good list and says why', { options: { pack: 
   await ui.unmount()
 })
 
-test('a pack that prints nothing usable falls back to the built-in japanese', { options: { pack: 'study' } }, async ($, on) => {
+test('a pack that prints nothing usable falls back to the default en-es pack', { options: { pack: 'study' } }, async ($, on) => {
   const clock = mock.clock(on)
   mock.store(on, { packs: PACKS })
   on('process.run', () => ({ value: { exitCode: 0, stdout: 'not json', stderr: '' } }))
@@ -389,7 +391,7 @@ test('a pack that prints nothing usable falls back to the built-in japanese', { 
   const ui = await $.ui.mount(SPINNER)
   const shown = (await ui.find({ type: 'Text' }))?.text ?? ''
 
-  expect(japanese().map(it => it.text)).toContain(shown.split('·')[0])
+  expect(PAIRS['en-es']?.().map(it => it.text)).toContain(shown.replace(/ …$/, ''))
   await ui.unmount()
 })
 
@@ -409,6 +411,11 @@ test('/spinner refresh reruns the pack and reports what it found', { options: { 
   expect(out.text).toBe('Refreshed "study": 3 words, 3 phrases.')
 })
 
+// The built-ins as `/spinner packs` lists them, the default marked.
+const LISTED = ['en-es', 'en-fr', 'en-de', 'en-jp', 'fr-de', 'fr-es', 'fr-jp', 'de-es', 'de-jp', 'japanese']
+  .map(n => `${n === 'en-es' ? '*' : ' '} ${n} (built-in)`)
+  .join('\n')
+
 test('/spinner add, packs and remove manage the packs the user added', async ($, on) => {
   mock.store(on, {})
 
@@ -416,11 +423,11 @@ test('/spinner add, packs and remove manage the packs the user added', async ($,
 
   expect(await run('add japanese python x.py')).toContain('built-in')
   expect(await run('add study python spinner.py --cwd C:\\repo')).toContain('/spinner pack study')
-  expect(await run('packs')).toBe('* japanese (built-in)\n  study')
+  expect(await run('packs')).toBe(`${LISTED}\n  study`)
   expect(await run('remove japanese')).toContain("can't be removed")
   expect(await run('remove nope')).toContain('no pack named')
   expect(await run('remove study')).toBe('Removed pack "study".')
-  expect(await run('packs')).toBe('* japanese (built-in)')
+  expect(await run('packs')).toBe(LISTED)
 })
 
 test('/spinner pack switches only to a pack that exists', async ($, on) => {
@@ -438,4 +445,72 @@ test('/spinner pack switches only to a pack that exists', async ($, on) => {
   expect(set).toEqual([])
   expect(await run('pack study')).toBe('Switched to "study".')
   expect(set).toEqual([{ key: 'language-spinner.pack', value: 'study' }])
+})
+
+// The language-pair packs and the defaults they came with (0.5).
+const PAIR_NAMES = ['en-es', 'en-fr', 'en-de', 'en-jp', 'fr-de', 'fr-es', 'fr-jp', 'de-es', 'de-jp']
+
+test('every pair pack has the same 50 verbs, each as a phrase and its translation', () => {
+  for (const name of PAIR_NAMES) {
+    const list = PAIRS[name]?.() ?? []
+
+    expect(list, name).toHaveLength(50)
+    expect(new Set(list.map(it => it.verb)).size, name).toBe(50)
+    expect(new Set(list.map(it => it.text)).size, name).toBe(50)
+
+    for (const it of list) {
+      expect(it.text.trim(), name).not.toBe('')
+      expect(it.gloss.trim(), name).not.toBe('')
+      expect(it.text, name).not.toBe(it.gloss)
+    }
+  }
+})
+
+test('phrases are in the first person and continuous, in each language', () => {
+  const first = (lang: any) => phrases(lang)[0]?.phrase
+
+  expect(first('en')).toBe("I'm eating")
+  expect(first('es')).toBe('estoy comiendo')
+  expect(first('fr')).toBe('je suis en train de manger')
+  expect(first('de')).toBe('ich esse gerade')
+  expect(first('jp')).toBe('たべています')
+  // "d'" before a vowel, and the reflexive follows the speaker.
+  expect(phrases('fr').find(r => r.verb === 'write')?.phrase).toBe("je suis en train d'écrire")
+  expect(phrases('fr').find(r => r.verb === 'rest')?.phrase).toBe('je suis en train de me reposer')
+  expect(phrases('en').every(r => r.phrase.startsWith("I'm "))).toBe(true)
+  expect(phrases('es').every(r => r.phrase.startsWith('estoy '))).toBe(true)
+  expect(phrases('jp').every(r => r.phrase.endsWith('います'))).toBe(true)
+})
+
+test('out of the box: English then Spanish, one language at a time, a new verb every 20 seconds', async ($, on) => {
+  const clock = mock.clock(on)
+  on('prompt.submit', (_, e) => e)
+  draw(on)
+
+  const english = new Set(phrases('en').map(r => `${r.phrase} …`))
+  const spanish = new Set(phrases('es').map(r => `${r.phrase} …`))
+  const spanishToEnglish = new Map(PAIRS['en-es']?.().map(it => [`${it.gloss} …`, `${it.text} …`]))
+
+  await $.prompt.submit({ text: 'hi' })
+  const ui = await $.ui.mount(SPINNER)
+  const shown = async () => (await ui.find({ type: 'Text' }))?.text ?? ''
+  const first = await shown()
+
+  expect(english.has(first)).toBe(true)
+  await clock.advance(4000)
+  expect(await shown()).toBe(first)
+
+  await clock.advance(1000)
+  const translation = await shown()
+  expect(spanish.has(translation)).toBe(true)
+  expect(spanishToEnglish.get(translation)).toBe(first)
+
+  await clock.advance(5000)
+  expect(await shown()).toBe(first)
+
+  await clock.advance(10000)
+  const next = await shown()
+  expect(english.has(next)).toBe(true)
+  expect(next).not.toBe(first)
+  await ui.unmount()
 })

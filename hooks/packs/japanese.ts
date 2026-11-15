@@ -6,18 +6,28 @@ type State = [now: string, before: string]
 type Verb = [reading: string, group: Group, gloss: string, state?: State]
 
 // Common verbs in hiragana. Add a row to grow the pack: [dictionary form, group, English].
-// Verbs of arriving or changing state (いく, くる, かえる, おきる) add what their ている
-// form really means: いっている is "has gone, is there", not "is going".
+// A verb of arriving or changing state (いく, くる, かえる, おきる) takes a fourth item with what
+// its ている form really means: いっている is "has gone, is there", not "is going".
+// This file stands alone on purpose: it is the example of a custom pack (your own verbs, your
+// own forms), and shares nothing with the language-pair packs in pairs.ts.
 const CORE: Verb[] = [
-  ['たべる', 'ichidan', 'eat'], ['のむ', 'godan', 'drink'], ['みる', 'ichidan', 'watch'],
-  ['ねる', 'ichidan', 'sleep'], ['おきる', 'ichidan', 'wake up', ["I'm awake", 'I was awake']],
-  ['いく', 'godan', 'go', ["I've gone (I'm there)", 'I had gone']],
-  ['かえる', 'godan', 'go home', ["I'm back home", 'I was back home']], ['かく', 'godan', 'write'], ['よむ', 'godan', 'read'],
-  ['きく', 'godan', 'listen'], ['かう', 'godan', 'buy'], ['あう', 'godan', 'meet'],
-  ['まつ', 'godan', 'wait'], ['はなす', 'godan', 'talk'], ['およぐ', 'godan', 'swim'],
-  ['あそぶ', 'godan', 'play'], ['はたらく', 'godan', 'work'], ['あるく', 'godan', 'walk'],
-  ['べんきょうする', 'irregular', 'study'], ['する', 'irregular', 'do'],
-  ['くる', 'irregular', 'come', ["I'm here (I've come)", 'I had come']],
+  ['たべる', 'ichidan', 'eat'], ['のむ', 'godan', 'drink'], ['ねる', 'ichidan', 'sleep'],
+  ['みる', 'ichidan', 'watch'], ['よむ', 'godan', 'read'], ['かく', 'godan', 'write'],
+  ['きく', 'godan', 'listen'], ['はなす', 'godan', 'talk'], ['あるく', 'godan', 'walk'],
+  ['はしる', 'godan', 'run'], ['およぐ', 'godan', 'swim'], ['はたらく', 'godan', 'work'],
+  ['べんきょうする', 'irregular', 'study'], ['あそぶ', 'godan', 'play'], ['りょうりする', 'irregular', 'cook'],
+  ['かう', 'godan', 'buy'], ['まつ', 'godan', 'wait'], ['かんがえる', 'ichidan', 'think'],
+  ['うたう', 'godan', 'sing'], ['おどる', 'godan', 'dance'], ['うんてんする', 'irregular', 'drive'],
+  ['そうじする', 'irregular', 'clean'], ['あらう', 'godan', 'wash'], ['あける', 'ichidan', 'open'],
+  ['しめる', 'ichidan', 'close'], ['あげる', 'ichidan', 'give'], ['しゃしんをとる', 'godan', 'take a photo'],
+  ['つくる', 'godan', 'make'], ['てつだう', 'godan', 'help'], ['たずねる', 'ichidan', 'ask'],
+  ['こたえる', 'ichidan', 'answer'], ['おしえる', 'ichidan', 'teach'], ['でんわをかける', 'ichidan', 'call'],
+  ['わらう', 'godan', 'laugh'], ['なく', 'godan', 'cry'], ['りょこうする', 'irregular', 'travel'],
+  ['さがす', 'godan', 'look for'], ['ならう', 'godan', 'learn'], ['うる', 'godan', 'sell'],
+  ['はらう', 'godan', 'pay'], ['はこぶ', 'godan', 'carry'], ['のぼる', 'godan', 'climb'],
+  ['えをかく', 'godan', 'draw'], ['やすむ', 'godan', 'rest'], ['たてる', 'ichidan', 'build'],
+  ['おくる', 'godan', 'send'], ['なおす', 'godan', 'fix'], ['えらぶ', 'godan', 'choose'],
+  ['なげる', 'ichidan', 'throw'], ['かぞえる', 'ichidan', 'count'],
 ]
 
 // States: "I'm being" reads wrong, so these skip the progressive forms (for verbs added to CORE).
@@ -112,7 +122,7 @@ export function conjugate(reading: string, group: Group, gloss: string, state?: 
   return out
 }
 
-/** The Japanese starter pack: every CORE verb in five forms. */
+/** The `japanese` pack: every CORE verb (50) in five forms. */
 export function japanese(): Entry[] {
   return CORE.flatMap(([reading, group, gloss, state]) => conjugate(reading, group, gloss, state))
 }
