@@ -33,7 +33,7 @@ test('a file pack: add with --file, then test reads the file', async ($, on) => 
   expect(read).toHaveLength(1)
   expect(read[0]).toMatch(/spanish\.json$/)
   expect(out).toContain('works: 2 words, 2 phrases')
-  expect(out).toContain("estoy comiendo· I'm eating")
+  expect(out).toContain("estoy comiendo · I'm eating")
 })
 
 test('a file pack that is missing says which file', async ($, on) => {

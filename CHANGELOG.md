@@ -6,6 +6,11 @@ All notable changes to this project. The format follows [Keep a Changelog](https
 
 ### Fixed
 - Every phrase now starts with a capital letter. Spanish, French and German phrases and the English "Let's" began in lower case; only English phrases starting with "I'm" looked right.
+- Same-line display put the separator right against the phrase ("I'm giving· Estoy dando"). The default `separator` is now ` · `. A separator you set yourself is kept.
+
+### Changed
+- README follows the same layout as the other tools in the set: requirements, a settings table, screenshots of each display and several packs, and an "Install the whole set" section.
+- Screenshots use the capture script shared by the set (claude-boxed-messages `docs/capture.py`) instead of a copy.
 
 ## [0.5.0] - 2026-11-15
 

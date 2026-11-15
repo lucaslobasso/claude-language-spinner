@@ -332,7 +332,7 @@ export const register: Register = (on, options) => {
   const interval = Math.max(1, seconds(options.intervalSeconds, 5))
   const askedRotate = seconds(options.rotateSeconds, 20)
   const rotate = effectiveRotate(askedRotate, interval, isAlternate)
-  const separator = typeof options.separator === 'string' ? options.separator : '· '
+  const separator = typeof options.separator === 'string' ? options.separator : ' · '
   const packName = typeof options.pack === 'string' && options.pack.trim() !== ''
     ? options.pack.trim().toLowerCase()
     : DEFAULT_PACK
