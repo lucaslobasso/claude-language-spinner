@@ -2,6 +2,16 @@
 
 All notable changes to this project. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-11-15
+
+### Fixed
+- Every phrase now starts with a capital letter. Spanish, French and German phrases and the English "Let's" began in lower case; only English phrases starting with "I'm" looked right.
+
+## [0.5.0] - 2026-11-15
+
+### Added
+- Nine language-pair packs; English-Spanish with alternate display is the default.
+
 ## [0.4.0] - 2026-11-15
 
 ### Changed
