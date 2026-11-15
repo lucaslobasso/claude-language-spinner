@@ -1,5 +1,18 @@
 {
-  "name": "language-spinner",
-  "owner": { "name": "lucaslobasso" },
-  "plugins": [{ "name": "language-spinner", "source": "./" }]
+  "name": "claude-language-spinner",
+  "owner": { "name": "lucaslobasso", "url": "https://github.com/lucaslobasso" },
+  "metadata": {
+    "description": "Learn a language while Claude thinks",
+    "version": "0.4.0"
+  },
+  "plugins": [
+    {
+      "name": "language-spinner",
+      "source": "./",
+      "description": "The thinking spinner shows a phrase in the language you're learning, with its translation",
+      "version": "0.4.0",
+      "category": "learning",
+      "keywords": ["language-learning", "japanese", "spinner", "vocabulary"]
+    }
+  ]
 }

@@ -1,20 +1,26 @@
 import type { Entry } from '../../types'
 
 type Group = 'godan' | 'ichidan' | 'irregular'
-type Verb = [reading: string, group: Group, gloss: string]
+/** A change-of-state verb's ている means the resulting state, not an action going on: [now, before]. */
+type State = [now: string, before: string]
+type Verb = [reading: string, group: Group, gloss: string, state?: State]
 
 // Common verbs in hiragana. Add a row to grow the pack: [dictionary form, group, English].
+// Verbs of arriving or changing state (いく, くる, かえる, おきる) add what their ている
+// form really means: いっている is "has gone, is there", not "is going".
 const CORE: Verb[] = [
   ['たべる', 'ichidan', 'eat'], ['のむ', 'godan', 'drink'], ['みる', 'ichidan', 'watch'],
-  ['ねる', 'ichidan', 'sleep'], ['おきる', 'ichidan', 'wake up'], ['いく', 'godan', 'go'],
-  ['かえる', 'godan', 'go home'], ['かく', 'godan', 'write'], ['よむ', 'godan', 'read'],
+  ['ねる', 'ichidan', 'sleep'], ['おきる', 'ichidan', 'wake up', ["I'm awake", 'I was awake']],
+  ['いく', 'godan', 'go', ["I've gone (I'm there)", 'I had gone']],
+  ['かえる', 'godan', 'go home', ["I'm back home", 'I was back home']], ['かく', 'godan', 'write'], ['よむ', 'godan', 'read'],
   ['きく', 'godan', 'listen'], ['かう', 'godan', 'buy'], ['あう', 'godan', 'meet'],
   ['まつ', 'godan', 'wait'], ['はなす', 'godan', 'talk'], ['およぐ', 'godan', 'swim'],
   ['あそぶ', 'godan', 'play'], ['はたらく', 'godan', 'work'], ['あるく', 'godan', 'walk'],
-  ['べんきょうする', 'irregular', 'study'], ['する', 'irregular', 'do'], ['くる', 'irregular', 'come'],
+  ['べんきょうする', 'irregular', 'study'], ['する', 'irregular', 'do'],
+  ['くる', 'irregular', 'come', ["I'm here (I've come)", 'I had come']],
 ]
 
-// States: "I'm being" reads wrong, so these skip the progressive forms.
+// States: "I'm being" reads wrong, so these skip the progressive forms (for verbs added to CORE).
 const NO_PROGRESSIVE = new Set(['ある', 'いる', 'わかる', 'できる'])
 
 // Dictionary ending -> its a, i, e, o stems.
@@ -30,7 +36,8 @@ type Forms = { te: string; vol: string; tai: string; pot: string }
 
 /** The te, volitional, -tai and potential forms of a verb, or null when it isn't handled. */
 export function forms(reading: string, group: Group): Forms | null {
-  if (reading.endsWith('する')) {
+  // Only a verb listed as irregular is a する verb: こする (rub) is an ordinary godan verb.
+  if (group === 'irregular' && reading.endsWith('する')) {
     const p = reading.slice(0, -2)
 
     return { te: `${p}して`, vol: `${p}しよう`, tai: `${p}したい`, pot: `${p}できる` }
@@ -81,7 +88,7 @@ function ing(word: string): string {
 }
 
 /** The spinner entries for one verb, English in the first person. */
-export function conjugate(reading: string, group: Group, gloss: string): Entry[] {
+export function conjugate(reading: string, group: Group, gloss: string, state?: State): Entry[] {
   const f = forms(reading, group)
 
   if (f === null) {
@@ -94,8 +101,8 @@ export function conjugate(reading: string, group: Group, gloss: string): Entry[]
   const out: Entry[] = []
 
   if (!NO_PROGRESSIVE.has(reading)) {
-    out.push({ text: `${f.te}いる`, gloss: `I'm ${doing}`, verb })
-    out.push({ text: `${f.te}いました`, gloss: `I was ${doing}`, verb })
+    out.push({ text: `${f.te}いる`, gloss: state?.[0] ?? `I'm ${doing}`, verb })
+    out.push({ text: `${f.te}いました`, gloss: state?.[1] ?? `I was ${doing}`, verb })
   }
 
   out.push({ text: f.vol, gloss: `let's ${gloss}`, verb })
@@ -107,5 +114,5 @@ export function conjugate(reading: string, group: Group, gloss: string): Entry[]
 
 /** The Japanese starter pack: every CORE verb in five forms. */
 export function japanese(): Entry[] {
-  return CORE.flatMap(([reading, group, gloss]) => conjugate(reading, group, gloss))
+  return CORE.flatMap(([reading, group, gloss, state]) => conjugate(reading, group, gloss, state))
 }

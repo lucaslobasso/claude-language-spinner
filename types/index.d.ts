@@ -10,6 +10,6 @@ export type View = { index: number; phase: 0 | 1 }
 
 declare module 'claude-code' {
   interface PluginState {
-    'language-spinner': { view: View }
+    'language-spinner': { view: Shaped<View> }
   }
 }

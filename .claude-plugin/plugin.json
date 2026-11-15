@@ -1,28 +1,34 @@
 {
   "name": "language-spinner",
-  "version": "0.3.0",
-  "description": "Learn a language while Claude thinks: the spinner shows a phrase in your target language with its translation, from packs you can write yourself",
+  "version": "0.4.0",
+  "description": "Learn a language while Claude thinks: the spinner shows a phrase in your target language with its translation, from built-in, file or script packs",
   "author": {
-    "name": "lucaslobasso"
+    "name": "lucaslobasso",
+    "url": "https://github.com/lucaslobasso"
   },
-  "homepage": "https://github.com/lucaslobasso/language-spinner",
+  "homepage": "https://github.com/lucaslobasso/claude-language-spinner",
+  "repository": "https://github.com/lucaslobasso/claude-language-spinner",
   "license": "MIT",
+  "keywords": ["language-learning", "japanese", "spinner", "vocabulary", "study"],
   "types": "./types/index.d.ts",
   "userConfig": {
+    "enabled": {
+      "type": "boolean",
+      "title": "On",
+      "description": "Show phrases in the spinner. Off leaves Claude Code's own spinner words. Also /spinner on|off",
+      "default": true
+    },
     "pack": {
       "type": "string",
       "title": "Pack",
-      "description": "Where the phrases come from: a built-in pack (japanese) or a pack you added with /spinner add. Change it with /spinner pack NAME",
+      "description": "Where the phrases come from: the built-in japanese, or the name of a pack you added with /spinner add (list them with /spinner packs). Change it with /spinner pack NAME",
       "default": "japanese"
     },
     "display": {
       "type": "string",
       "title": "Display",
       "description": "same-line: phrase and translation together. alternate: phrase first, then its translation",
-      "options": [
-        "same-line",
-        "alternate"
-      ],
+      "options": ["same-line", "alternate"],
       "default": "same-line"
     },
     "intervalSeconds": {
@@ -34,7 +40,7 @@
     "rotateSeconds": {
       "type": "number",
       "title": "New phrase every (seconds)",
-      "description": "Switch to a different word after this many seconds of the same turn. 0 keeps one phrase per turn",
+      "description": "Switch to a different word after this many seconds of the same turn (at least two intervals in alternate display). 0 keeps one phrase per turn",
       "default": 20
     },
     "separator": {

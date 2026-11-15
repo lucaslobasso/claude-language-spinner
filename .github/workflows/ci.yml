@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate plugin and marketplace
+        run: |
+          claude plugin validate .
+          claude plugin validate .claude-plugin/marketplace.json
+      - name: Tests
+        run: claude plugin test .
+      - name: Example packs parse
+        run: |
+          for f in examples/*.json; do node -e "const r=JSON.parse(require('fs').readFileSync('$f','utf8')); if(!Array.isArray(r)||!r.every(x=>x.text&&x.gloss)) process.exit(1)"; done
+          node examples/pack.mjs | node -e "JSON.parse(require('fs').readFileSync(0,'utf8'))"
+          python3 examples/pack.py | node -e "JSON.parse(require('fs').readFileSync(0,'utf8'))"

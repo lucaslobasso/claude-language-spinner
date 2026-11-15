@@ -1,0 +1,22 @@
+[
+  { "text": "estoy comiendo", "gloss": "I'm eating", "verb": "comer" },
+  { "text": "quiero comer", "gloss": "I want to eat", "verb": "comer" },
+  { "text": "estoy durmiendo", "gloss": "I'm sleeping", "verb": "dormir" },
+  { "text": "quiero dormir", "gloss": "I want to sleep", "verb": "dormir" },
+  { "text": "estoy hablando", "gloss": "I'm talking", "verb": "hablar" },
+  { "text": "puedo hablar", "gloss": "I can talk", "verb": "hablar" },
+  { "text": "estoy leyendo", "gloss": "I'm reading", "verb": "leer" },
+  { "text": "vamos a leer", "gloss": "let's read", "verb": "leer" },
+  { "text": "estoy escribiendo", "gloss": "I'm writing", "verb": "escribir" },
+  { "text": "quiero escribir", "gloss": "I want to write", "verb": "escribir" },
+  { "text": "estoy pensando", "gloss": "I'm thinking", "verb": "pensar" },
+  { "text": "puedo pensar", "gloss": "I can think", "verb": "pensar" },
+  { "text": "estoy trabajando", "gloss": "I'm working", "verb": "trabajar" },
+  { "text": "vamos a trabajar", "gloss": "let's work", "verb": "trabajar" },
+  { "text": "estoy aprendiendo", "gloss": "I'm learning", "verb": "aprender" },
+  { "text": "quiero aprender", "gloss": "I want to learn", "verb": "aprender" },
+  { "text": "estoy buscando", "gloss": "I'm looking for", "verb": "buscar" },
+  { "text": "estoy esperando", "gloss": "I'm waiting", "verb": "esperar" },
+  { "text": "estoy cocinando", "gloss": "I'm cooking", "verb": "cocinar" },
+  { "text": "estoy caminando", "gloss": "I'm walking", "verb": "caminar" }
+]
