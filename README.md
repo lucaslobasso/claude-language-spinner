@@ -127,7 +127,7 @@ Nine built-in packs, named `from-to`. The first language shows first and the sec
 | `en-jp` | English → Japanese | `fr-de` | French → German |
 | `fr-es` | French → Spanish | | |
 
-Every pack has the same 50 everyday verbs, always in the first person and continuous: "I'm eating", "estoy comiendo", "je suis en train de manger", "ich esse gerade", "たべています". French and German have no continuous tense, so they use the usual stand-ins (*être en train de*, *gerade*). Japanese is in hiragana. The table is in [`hooks/packs/verbs.ts`](hooks/packs/verbs.ts). The phrases were written without a native review, so corrections are welcome.
+Every pack has the same 50 everyday verbs, always in the first person and continuous: "I'm eating", "Estoy comiendo", "Je suis en train de manger", "Ich esse gerade", "たべています". French and German have no continuous tense, so they use the usual stand-ins (*être en train de*, *gerade*). Japanese is in hiragana. The table is in [`hooks/packs/verbs.ts`](hooks/packs/verbs.ts). The phrases were written without a native review, so corrections are welcome.
 
 ## The Japanese pack
 

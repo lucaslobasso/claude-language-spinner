@@ -115,7 +115,7 @@ export function conjugate(reading: string, group: Group, gloss: string, state?: 
     out.push({ text: `${f.te}いました`, gloss: state?.[1] ?? `I was ${doing}`, verb })
   }
 
-  out.push({ text: f.vol, gloss: `let's ${gloss}`, verb })
+  out.push({ text: f.vol, gloss: `Let's ${gloss}`, verb })
   out.push({ text: f.tai, gloss: `I want to ${gloss}`, verb })
   out.push({ text: f.pot, gloss: `I can ${gloss}`, verb })
 

@@ -85,7 +85,9 @@ const BUILD: Record<Lang, (row: Row) => string> = {
   jp: row => `${row[5]}います`,
 }
 
-/** The verb's phrase in one language, e.g. `phrases('es')[0]` is "estoy comiendo". */
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
+/** The verb's phrase in one language, starting with a capital: `phrases('es')[0]` is "Estoy comiendo". */
 export function phrases(lang: Lang): { verb: string; phrase: string }[] {
-  return ROWS.map(row => ({ verb: row[0], phrase: BUILD[lang](row) }))
+  return ROWS.map(row => ({ verb: row[0], phrase: capital(BUILD[lang](row)) }))
 }
