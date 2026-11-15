@@ -1,0 +1,22 @@
+[
+  { "text": "je mange", "gloss": "I'm eating", "verb": "manger" },
+  { "text": "je veux manger", "gloss": "I want to eat", "verb": "manger" },
+  { "text": "je dors", "gloss": "I'm sleeping", "verb": "dormir" },
+  { "text": "je veux dormir", "gloss": "I want to sleep", "verb": "dormir" },
+  { "text": "je parle", "gloss": "I'm talking", "verb": "parler" },
+  { "text": "je peux parler", "gloss": "I can talk", "verb": "parler" },
+  { "text": "je lis", "gloss": "I'm reading", "verb": "lire" },
+  { "text": "lisons", "gloss": "let's read", "verb": "lire" },
+  { "text": "j'écris", "gloss": "I'm writing", "verb": "écrire" },
+  { "text": "je veux écrire", "gloss": "I want to write", "verb": "écrire" },
+  { "text": "je réfléchis", "gloss": "I'm thinking", "verb": "réfléchir" },
+  { "text": "je travaille", "gloss": "I'm working", "verb": "travailler" },
+  { "text": "travaillons", "gloss": "let's work", "verb": "travailler" },
+  { "text": "j'apprends", "gloss": "I'm learning", "verb": "apprendre" },
+  { "text": "je veux apprendre", "gloss": "I want to learn", "verb": "apprendre" },
+  { "text": "je cherche", "gloss": "I'm looking for", "verb": "chercher" },
+  { "text": "j'attends", "gloss": "I'm waiting", "verb": "attendre" },
+  { "text": "je cuisine", "gloss": "I'm cooking", "verb": "cuisiner" },
+  { "text": "je marche", "gloss": "I'm walking", "verb": "marcher" },
+  { "text": "allons-y", "gloss": "let's go", "verb": "aller" }
+]

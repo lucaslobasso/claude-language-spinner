@@ -14,8 +14,8 @@ const DEFAULT_PACK = 'japanese'
 const NAME = /^[a-z0-9][a-z0-9_-]{0,31}$/i
 const PACK_TIMEOUT_MS = 15000
 
-/** A pack of the user's own: a command whose standard output is the list. */
-export type PackSpec = { argv: string[]; cwd?: string }
+/** A pack of the user's own: a command whose standard output is the list, or a JSON file holding it. */
+export type PackSpec = { argv: string[]; cwd?: string } | { file: string }
 type Packs = Record<string, PackSpec>
 
 /**
@@ -23,7 +23,7 @@ type Packs = Record<string, PackSpec>
  * A row may also carry `verb`: rows sharing one are forms of a single word.
  */
 export function parseEntries(text: string): Entry[] {
-  const data: unknown = JSON.parse(text)
+  const data: unknown = JSON.parse(text.replace(/^﻿/, ''))
 
   if (!Array.isArray(data)) {
     throw new Error('expected a JSON list')
@@ -40,7 +40,7 @@ export function parseEntries(text: string): Entry[] {
   })
 }
 
-/** What the store held under `packs`, keeping only well-formed entries. */
+/** What the store held under `packs`, keeping only well-formed entries, names in lower case. */
 function cleanPacks(value: unknown): Packs {
   const out: Packs = {}
 
@@ -49,10 +49,13 @@ function cleanPacks(value: unknown): Packs {
   }
 
   for (const [name, spec] of Object.entries(value)) {
-    const { argv, cwd } = (spec ?? {}) as Record<string, unknown>
+    const { argv, cwd, file } = (spec ?? {}) as Record<string, unknown>
+    const key = name.toLowerCase()
 
-    if (Array.isArray(argv) && argv.length > 0 && argv.every(a => typeof a === 'string')) {
-      out[name] = typeof cwd === 'string' && cwd !== '' ? { argv: argv as string[], cwd } : { argv: argv as string[] }
+    if (typeof file === 'string' && file !== '') {
+      out[key] = { file }
+    } else if (Array.isArray(argv) && argv.length > 0 && argv.every(a => typeof a === 'string')) {
+      out[key] = typeof cwd === 'string' && cwd !== '' ? { argv: argv as string[], cwd } : { argv: argv as string[] }
     }
   }
 
@@ -97,13 +100,16 @@ export function createDeck(groups: readonly string[], random: () => number = Mat
 const groupOf = (entry: Entry) => entry.verb ?? entry.text
 
 const HINT =
-  'alternate | same-line | interval N | rotate N | pack NAME | packs | refresh | add NAME CMD… [--cwd DIR] | remove NAME'
+  'on | off | alternate | same-line | interval N | rotate N | pack NAME | packs | show NAME | test NAME | refresh | ' +
+  'add NAME CMD… [--cwd DIR] | add NAME --file PATH | remove NAME'
 
 export type Change =
-  | { field: string; value: string | number; say: string }
+  | { field: string; value: string | number | boolean; say: string }
   | { show: true }
   | { pack: string }
   | { packs: true }
+  | { describe: string }
+  | { test: string }
   | { refresh: true }
   | { add: { name: string; spec: PackSpec } }
   | { remove: string }
@@ -114,23 +120,64 @@ export function tokenize(line: string): string[] {
   return [...line.matchAll(/"([^"]*)"|(\S+)/g)].map(m => m[1] ?? m[2] ?? '')
 }
 
+/** `/spinner add NAME …`: a JSON file, or a command with an optional `--cwd DIR` right after the name or at the end. */
+function parseAdd(rest: string): Change {
+  const usage = { error: '/spinner add takes a name and a command or file: /spinner add NAME CMD… [--cwd DIR]  or  /spinner add NAME --file PATH' }
+  const [rawName = '', ...tokens] = tokenize(rest)
+  const name = rawName.toLowerCase()
+
+  if (!NAME.test(name) || tokens.length === 0) {
+    return usage
+  }
+
+  if (tokens[0] === '--file') {
+    return tokens.length === 2 && tokens[1] ? { add: { name, spec: { file: tokens[1] } } } : usage
+  }
+
+  let cwd: string | undefined
+  let argv = tokens
+
+  if (tokens[0] === '--cwd') {
+    cwd = tokens[1]
+    argv = tokens.slice(2)
+  } else if (tokens.length >= 2 && tokens[tokens.length - 2] === '--cwd') {
+    cwd = tokens[tokens.length - 1]
+    argv = tokens.slice(0, -2)
+  } else if (tokens[tokens.length - 1] === '--cwd') {
+    return usage
+  }
+
+  if (argv.length === 0 || cwd === '') {
+    return usage
+  }
+
+  return { add: { name, spec: cwd ? { argv, cwd } : { argv } } }
+}
+
+const WHOLE = /^\d+$/
+
 /** What a `/spinner` argument line asks for: a setting to change, a pack to run, or an error. */
 export function parseCommand(args: string): Change {
-  const [, word = '', rest = ''] = args.trim().match(/^(\S+)\s*(.*)$/) ?? []
+  const [, rawWord = '', rest = ''] = args.trim().match(/^(\S+)\s*(.*)$/) ?? []
+  const word = rawWord.toLowerCase()
+  const name = rest.trim().toLowerCase()
 
   switch (word) {
     case '':
       return { show: true }
+    case 'on':
+    case 'off':
+      return { field: 'enabled', value: word === 'on', say: `Language spinner ${word}.` }
     case 'alternate':
     case 'same-line':
       return { field: 'display', value: word, say: `Display is now ${word}.` }
     case 'interval':
     case 'rotate': {
-      const n = Number(rest)
       const min = word === 'interval' ? 1 : 0
+      const n = WHOLE.test(rest.trim()) ? Number(rest.trim()) : NaN
 
-      if (rest === '' || !Number.isFinite(n) || n < min) {
-        return { error: `/spinner ${word} takes a number of seconds, ${min} or more.` }
+      if (!Number.isFinite(n) || n < min) {
+        return { error: `/spinner ${word} takes a whole number of seconds, ${min} or more.` }
       }
 
       return word === 'interval'
@@ -138,41 +185,67 @@ export function parseCommand(args: string): Change {
         : { field: 'rotateSeconds', value: n, say: n === 0 ? 'One phrase per turn.' : `New phrase every ${n}s.` }
     }
     case 'pack':
-      return NAME.test(rest) ? { pack: rest } : { error: '/spinner pack takes a pack name (see /spinner packs).' }
+      return NAME.test(name) ? { pack: name } : { error: '/spinner pack takes a pack name (see /spinner packs).' }
     case 'packs':
       return { packs: true }
+    case 'show':
+      return NAME.test(name) ? { describe: name } : { error: '/spinner show takes a pack name (see /spinner packs).' }
+    case 'test':
+      return NAME.test(name) ? { test: name } : { error: '/spinner test takes a pack name (see /spinner packs).' }
     case 'refresh':
       return { refresh: true }
     case 'remove':
-      return NAME.test(rest) ? { remove: rest } : { error: '/spinner remove takes a pack name (see /spinner packs).' }
-    case 'add': {
-      const [name = '', ...tokens] = tokenize(rest)
-      const at = tokens.indexOf('--cwd')
-      const cwd = at === -1 ? undefined : tokens[at + 1]
-      const argv = at === -1 ? tokens : tokens.filter((_, i) => i !== at && i !== at + 1)
-
-      if (!NAME.test(name) || argv.length === 0 || (at !== -1 && !cwd)) {
-        return { error: '/spinner add takes a name and a command: /spinner add NAME CMD… [--cwd DIR]' }
-      }
-
-      return { add: { name, spec: cwd ? { argv, cwd } : { argv } } }
-    }
+      return NAME.test(name) ? { remove: name } : { error: '/spinner remove takes a pack name (see /spinner packs).' }
+    case 'add':
+      return parseAdd(rest)
+    case 'help':
+      return { error: `Try: ${HINT}` }
     default:
-      return { error: `Unknown option "${word}". Try: ${HINT}` }
+      return { error: `Unknown option "${rawWord}". Try: ${HINT}` }
   }
 }
 
 const seconds = (value: unknown, fallback: number) =>
-  typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.round(value) : fallback
+
+/**
+ * Seconds before a new phrase. In alternate display a phrase needs a full round (phrase, then
+ * translation) before it moves on, or the translation would never show.
+ */
+export function effectiveRotate(rotate: number, interval: number, isAlternate: boolean): number {
+  return isAlternate && rotate > 0 ? Math.max(rotate, interval * 2) : rotate
+}
 
 const why = (error: unknown) => (error instanceof Error ? error.message : String(error))
+
+const describeSpec = (spec: PackSpec) =>
+  'file' in spec ? `file ${spec.file}` : `command ${spec.argv.join(' ')}${spec.cwd ? ` (in ${spec.cwd})` : ''}`
 
 async function readPacks($: EngineInterface): Promise<Packs> {
   return cleanPacks(await $.store.get('packs'))
 }
 
+/** Why a command failed, in words a person can act on. */
+export function explainExit(argv: string[], exitCode: number | null, stdout: string, stderr: string): string {
+  const program = argv[0] ?? ''
+
+  // 9009: cmd.exe's "not recognized"; 127: a POSIX shell's "command not found".
+  if (exitCode === 9009 || exitCode === 127) {
+    return `"${program}" was not found. Check the name, or use the full path` +
+      (/^python3?$/.test(program) ? ' (on Windows try "py", elsewhere "python3").' : '.')
+  }
+
+  if (exitCode === null) {
+    return 'it was stopped before it finished'
+  }
+
+  const last = (stderr.trim() || stdout.trim()).split('\n').pop()?.trim()
+
+  return `it exited with ${exitCode}${last ? `: ${last}` : ' and printed nothing'}`
+}
+
 /** Runs a pack and returns its list; throws with the reason when it can't. */
-async function runPack($: EngineInterface, name: string): Promise<Entry[]> {
+export async function runPack($: EngineInterface, name: string): Promise<Entry[]> {
   const builtin = BUILTINS[name]
 
   if (builtin !== undefined) {
@@ -185,24 +258,40 @@ async function runPack($: EngineInterface, name: string): Promise<Entry[]> {
     throw new Error(`there is no pack named "${name}"`)
   }
 
-  let result
-  try {
-    result = await $.process.run(spec.argv, {
-      timeoutMs: PACK_TIMEOUT_MS,
-      env: { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
-      ...(spec.cwd ? { cwd: spec.cwd } : {}),
-    })
-  } catch (error) {
-    throw new Error(`could not run it (${why(error)})`)
-  }
+  let output: string
 
-  if (result.exitCode !== 0) {
-    throw new Error(`it exited with ${result.exitCode}: ${result.stderr.trim().split('\n').pop() ?? ''}`)
+  if ('file' in spec) {
+    try {
+      output = (await $.fs.read(spec.file)) as string
+    } catch (error) {
+      throw new Error(`could not read ${spec.file} (${why(error)})`)
+    }
+  } else {
+    let result
+    try {
+      result = await $.process.run(spec.argv, {
+        timeoutMs: PACK_TIMEOUT_MS,
+        env: { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
+        ...(spec.cwd ? { cwd: spec.cwd } : {}),
+      })
+    } catch (error) {
+      const reason = why(error)
+
+      throw new Error(/ENOENT|not found|cannot find/i.test(reason)
+        ? explainExit(spec.argv, 127, '', '')
+        : `could not run it (${reason})`)
+    }
+
+    if (result.exitCode !== 0) {
+      throw new Error(explainExit(spec.argv, result.exitCode, result.stdout ?? '', result.stderr ?? ''))
+    }
+
+    output = result.stdout
   }
 
   let list
   try {
-    list = parseEntries(result.stdout)
+    list = parseEntries(output)
   } catch (error) {
     throw new Error(`its output is not a list of phrases (${why(error)})`)
   }
@@ -214,11 +303,16 @@ async function runPack($: EngineInterface, name: string): Promise<Entry[]> {
   return list
 }
 
-/** Runs a pack and hands its list to `apply` (a command pack's list is also cached); the reason it failed, or null. */
-async function refresh($: EngineInterface, name: string, apply: (list: Entry[]) => void): Promise<string | null> {
+/** Puts entry `index` on screen, phrase first. */
+async function showEntry($: EngineInterface, index: number): Promise<void> {
+  await update($, view, () => ({ index, phase: 0 as const }))
+}
+
+/** Runs a pack and hands its list to `apply` (a user pack's list is also cached); the reason it failed, or null. */
+async function refreshPack($: EngineInterface, name: string, apply: (list: Entry[]) => number): Promise<string | null> {
   try {
     const list = await runPack($, name)
-    apply(list)
+    await showEntry($, apply(list))
 
     if (BUILTINS[name] === undefined) {
       await $.store.set(`cache:${name}`, list)
@@ -231,11 +325,15 @@ async function refresh($: EngineInterface, name: string, apply: (list: Entry[]) 
 }
 
 export const register: Register = (on, options) => {
+  const isEnabled = options.enabled !== false
   const isAlternate = options.display === 'alternate'
   const interval = Math.max(1, seconds(options.intervalSeconds, 5))
-  const rotate = seconds(options.rotateSeconds, 20)
+  const askedRotate = seconds(options.rotateSeconds, 20)
+  const rotate = effectiveRotate(askedRotate, interval, isAlternate)
   const separator = typeof options.separator === 'string' ? options.separator : '· '
-  const packName = typeof options.pack === 'string' && options.pack.trim() !== '' ? options.pack.trim() : DEFAULT_PACK
+  const packName = typeof options.pack === 'string' && options.pack.trim() !== ''
+    ? options.pack.trim().toLowerCase()
+    : DEFAULT_PACK
 
   let entries: Entry[] = []
   let byGroup = new Map<string, number[]>()
@@ -257,6 +355,13 @@ export const register: Register = (on, options) => {
     return forms[Math.floor(Math.random() * forms.length)] ?? 0
   }
 
+  // Load a new list and pick its first word, so no session opens on the same one.
+  const loadAndDraw = (list: Entry[]): number => {
+    load(list)
+
+    return draw()
+  }
+
   load(BUILTINS[packName]?.() ?? [])
 
   on('command.run', { command: 'spinner' }, async ($, e) => {
@@ -267,20 +372,57 @@ export const register: Register = (on, options) => {
     }
 
     if ('show' in change) {
+      const spec = (await readPacks($))[packName]
       const rows = (await $.config.list()).filter(row => row.key.startsWith('language-spinner.'))
       const settings = rows.map(row => `${row.key.slice('language-spinner.'.length)}: ${String(row.value)}`)
+      const lines = [
+        `${isEnabled ? 'On' : 'Off'} · pack "${packName}" (${BUILTINS[packName] ? 'built-in' : spec ? describeSpec(spec) : 'missing'}): ` +
+          `${byGroup.size} words, ${entries.length} phrases`,
+        ...settings,
+      ]
 
-      return { text: [`words: ${byGroup.size}, phrases: ${entries.length}`, ...settings].join('\n') }
+      if (rotate !== askedRotate) {
+        lines.push(`Note: in alternate display a phrase stays ${rotate}s (two intervals) so its translation shows.`)
+      }
+
+      return { text: lines.join('\n') }
     }
 
     if ('packs' in change) {
-      const names = [...Object.keys(BUILTINS), ...Object.keys(await readPacks($))]
+      const packs = await readPacks($)
+      const names = [...Object.keys(BUILTINS), ...Object.keys(packs).filter(n => BUILTINS[n] === undefined)]
 
-      return { text: names.map(n => `${n === packName ? '*' : ' '} ${n}${BUILTINS[n] ? ' (built-in)' : ''}`).join('\n') }
+      return {
+        text: names.map(n => `${n === packName ? '*' : ' '} ${n}${BUILTINS[n] ? ' (built-in)' : ''}`).join('\n'),
+      }
+    }
+
+    if ('describe' in change) {
+      const name = change.describe
+
+      if (BUILTINS[name] !== undefined) {
+        return { text: `"${name}" is built in (hooks/packs/${name}.ts).` }
+      }
+
+      const spec = (await readPacks($))[name]
+
+      return { text: spec ? `"${name}": ${describeSpec(spec)}` : `There is no pack named "${name}".` }
+    }
+
+    if ('test' in change) {
+      try {
+        const list = await runPack($, change.test)
+        const words = new Set(list.map(groupOf)).size
+        const sample = list.slice(0, 5).map(it => `  ${it.text}${separator}${it.gloss}`)
+
+        return { text: [`Pack "${change.test}" works: ${words} words, ${list.length} phrases. First ones:`, ...sample].join('\n') }
+      } catch (error) {
+        return { text: `Pack "${change.test}" failed: ${why(error)}` }
+      }
     }
 
     if ('refresh' in change) {
-      const failure = await refresh($, packName, load)
+      const failure = await refreshPack($, packName, loadAndDraw)
 
       return {
         text: failure === null
@@ -296,9 +438,16 @@ export const register: Register = (on, options) => {
         return { text: `"${name}" is a built-in pack; pick another name.` }
       }
 
-      await $.store.set('packs', { ...(await readPacks($)), [name]: spec })
+      const packs = await readPacks($)
+      const replaced = packs[name] !== undefined
+      await $.store.set('packs', { ...packs, [name]: spec })
+      await $.store.delete(`cache:${name}`)
 
-      return { text: `Added pack "${name}". Switch to it with /spinner pack ${name}.` }
+      const next = name === packName
+        ? `Run /spinner refresh to use it now.`
+        : `Try it with /spinner test ${name}, then switch with /spinner pack ${name}.`
+
+      return { text: `${replaced ? 'Replaced' : 'Added'} pack "${name}". ${next}` }
     }
 
     if ('remove' in change) {
@@ -319,6 +468,7 @@ export const register: Register = (on, options) => {
 
       const { [name]: _gone, ...kept } = packs
       await $.store.set('packs', kept)
+      await $.store.delete(`cache:${name}`)
 
       return { text: `Removed pack "${name}".` }
     }
@@ -337,39 +487,61 @@ export const register: Register = (on, options) => {
 
     const done = await $.config.set({ key: `language-spinner.${change.field}`, value: change.value })
 
-    return { text: 'deny' in done ? `Could not change that setting: ${String(done.deny)}` : change.say }
+    if ('deny' in done) {
+      return { text: `Could not change that setting: ${String(done.deny)}` }
+    }
+
+    const willAlternate = change.field === 'display' ? change.value === 'alternate' : isAlternate
+    const willInterval = change.field === 'intervalSeconds' ? Number(change.value) : interval
+    const willRotate = change.field === 'rotateSeconds' ? Number(change.value) : askedRotate
+    const real = effectiveRotate(willRotate, willInterval, willAlternate)
+
+    return {
+      text: real !== willRotate
+        ? `${change.say} In alternate display each phrase stays ${real}s so its translation shows.`
+        : change.say,
+    }
   })
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'spinner',
-      description: 'Change the language spinner: display, timing, packs',
+      description: 'Change the language spinner: on/off, display, timing, packs',
       argumentHint: HINT,
     })
 
-    // A command pack shows its last good list at once; the script then runs in the
-    // background, so a slow or broken one never delays the session.
-    if (BUILTINS[packName] === undefined) {
-      const cached = await $.store.get(`cache:${packName}`)
-
-      if (Array.isArray(cached)) {
-        load(parseEntries(JSON.stringify(cached)))
-      }
+    if (!isEnabled) {
+      return next(e)
     }
 
+    // A user pack shows its last good list at once; the pack then runs in the background,
+    // so a slow or broken one never delays the session. Built-ins need neither.
+    if (BUILTINS[packName] === undefined) {
+      try {
+        const cached = await $.store.get(`cache:${packName}`)
+
+        if (Array.isArray(cached)) {
+          load(parseEntries(JSON.stringify(cached)))
+        }
+      } catch {}
+    }
+
+    await showEntry($, draw()).catch(() => undefined)
     const started = await next(e)
 
-    void (async () => {
-      const failure = await refresh($, packName, load)
+    if (BUILTINS[packName] === undefined) {
+      void (async () => {
+        const failure = await refreshPack($, packName, loadAndDraw)
 
-      if (failure !== null) {
-        $.ui.toast(`language-spinner: pack "${packName}" failed: ${failure}`)
+        if (failure !== null) {
+          $.ui.toast(`language-spinner: pack "${packName}" failed: ${failure}`)
 
-        if (entries.length === 0) {
-          load(japanese())
+          if (entries.length === 0) {
+            await showEntry($, loadAndDraw(japanese())).catch(() => undefined)
+          }
         }
-      }
-    })()
+      })()
+    }
 
     return started
   })
@@ -377,6 +549,10 @@ export const register: Register = (on, options) => {
   on('prompt.submit', async ($, e, next) => {
     stop?.()
     stop = null
+
+    if (!isEnabled || entries.length === 0) {
+      return next(e)
+    }
 
     // Each turn opens on a different word from the last one shown.
     let shown: View = { index: draw(), phase: 0 }
@@ -419,20 +595,23 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
     // A message is the engine saying something specific; leave it alone.
-    if (entries.length === 0 || e.props.message !== null) {
+    if (!isEnabled || entries.length === 0 || e.props.message !== null) {
       return next(e)
     }
 
-    const { index, phase } = await read($, view)
-    const entry = entries[index] ?? entries[0]
+    let word: string
+    try {
+      const { index, phase } = await read($, view)
+      const entry = entries[index] ?? entries[0]
 
-    if (entry === undefined) {
+      if (entry === undefined) {
+        return next(e)
+      }
+
+      word = isAlternate ? (phase === 1 ? entry.gloss : entry.text) : `${entry.text}${separator}${entry.gloss}`
+    } catch {
       return next(e)
     }
-
-    const word = isAlternate
-      ? phase === 1 ? entry.gloss : entry.text
-      : `${entry.text}${separator}${entry.gloss}`
 
     return next({ ...e, props: { ...e.props, word, suffix: ' …' } })
   })
