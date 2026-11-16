@@ -3,7 +3,7 @@
   "version": "0.5.1",
   "description": "Learn a language while Claude thinks: the spinner shows a phrase, then its translation five seconds later, and a new verb every twenty. Ships English, Spanish, French, German and Japanese pairs; add your own from a file or a script",
   "author": {
-    "name": "lucaslobasso",
+    "name": "Lucas Lobasso",
     "url": "https://github.com/lucaslobasso"
   },
   "homepage": "https://github.com/lucaslobasso/claude-language-spinner",
@@ -47,7 +47,7 @@
       "type": "string",
       "title": "Separator",
       "description": "What goes between phrase and translation in same-line display",
-      "default": "· "
+      "default": " · "
     }
   }
 }

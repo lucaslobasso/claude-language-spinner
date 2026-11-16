@@ -1,6 +1,6 @@
 {
   "name": "claude-language-spinner",
-  "owner": { "name": "lucaslobasso", "url": "https://github.com/lucaslobasso" },
+  "owner": { "name": "Lucas Lobasso", "url": "https://github.com/lucaslobasso" },
   "metadata": {
     "description": "Learn a language while Claude thinks",
     "version": "0.5.1"

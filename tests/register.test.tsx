@@ -186,7 +186,7 @@ test('the spinner shows the phrase and its translation on one line', { options: 
 
   const ui = await $.ui.mount(SPINNER)
 
-  expect((await ui.find({ type: 'Text' }))?.text).toBe("たべている· I'm eating …")
+  expect((await ui.find({ type: 'Text' }))?.text).toBe("たべている · I'm eating …")
   await ui.unmount()
 })
 
@@ -255,7 +255,7 @@ test('every switch lands on a different verb, not another form of the same one',
 
   for (let i = 0; i < 25; i += 1) {
     const shown = (await ui.find({ type: 'Text' }))?.text ?? ''
-    seen.push(verbOf.get(shown.split('·')[0] ?? ''))
+    seen.push(verbOf.get((shown.split('·')[0] ?? '').trim()))
     await clock.advance(20000)
   }
 
@@ -280,7 +280,7 @@ test('a new turn opens on a different verb than the last one shown', { options: 
   for (let i = 0; i < 30; i += 1) {
     await $.prompt.submit({ text: 'hi' })
     const shown = (await ui.find({ type: 'Text' }))?.text ?? ''
-    seen.push(verbOf.get(shown.split('·')[0] ?? ''))
+    seen.push(verbOf.get((shown.split('·')[0] ?? '').trim()))
   }
 
   for (let i = 1; i < seen.length; i += 1) {
@@ -349,7 +349,7 @@ test('a command pack runs when the session starts and its phrases are drawn', { 
 
   const ui = await $.ui.mount(SPINNER)
 
-  expect(['さけぶ· I shout …', 'わらう· I laugh …']).toContain((await ui.find({ type: 'Text' }))?.text)
+  expect(['さけぶ · I shout …', 'わらう · I laugh …']).toContain((await ui.find({ type: 'Text' }))?.text)
   await ui.unmount()
 })
 
@@ -374,7 +374,7 @@ test('a failing pack keeps its last good list and says why', { options: { pack: 
 
   const ui = await $.ui.mount(SPINNER)
 
-  expect(['さけぶ· I shout …', 'わらう· I laugh …']).toContain((await ui.find({ type: 'Text' }))?.text)
+  expect(['さけぶ · I shout …', 'わらう · I laugh …']).toContain((await ui.find({ type: 'Text' }))?.text)
   await ui.unmount()
 })
 
