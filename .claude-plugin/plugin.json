@@ -1,6 +1,6 @@
 {
   "name": "language-spinner",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Learn a language while Claude thinks: the spinner shows a phrase, then its translation five seconds later, and a new verb every twenty. Ships English, Spanish, French, German and Japanese pairs; add your own from a file or a script",
   "author": {
     "name": "lucaslobasso",
